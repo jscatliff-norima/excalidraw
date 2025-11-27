@@ -442,6 +442,7 @@ export const TOOL_TYPE = {
   rectangle: "rectangle",
   diamond: "diamond",
   ellipse: "ellipse",
+  hexagon: "hexagon",
   arrow: "arrow",
   line: "line",
   freedraw: "freedraw",

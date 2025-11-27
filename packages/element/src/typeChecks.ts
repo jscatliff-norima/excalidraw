@@ -1,66 +1,73 @@
-import { ROUNDNESS, assertNever } from "@excalidraw/common";
+import { FONT_FAMILY } from "@excalidraw/common";
 
-import { pointsEqual } from "@excalidraw/math";
-
-import type { ElementOrToolType } from "@excalidraw/excalidraw/types";
-
-import type { MarkNonNullable } from "@excalidraw/common/utility-types";
-
-import type { Bounds } from "./bounds";
 import type {
-  ExcalidrawElement,
-  ExcalidrawTextElement,
-  ExcalidrawEmbeddableElement,
-  ExcalidrawLinearElement,
   ExcalidrawBindableElement,
-  ExcalidrawFreeDrawElement,
-  InitializedExcalidrawImageElement,
+  ExcalidrawElement,
+  ExcalidrawGenericElement,
+  ExcalidrawIframeElement,
   ExcalidrawImageElement,
+  ExcalidrawLinearElement,
+  ExcalidrawSelectionElement,
+  ExcalidrawTextElement,
+  Arrowhead,
+  ExcalidrawFreeDrawElement,
+  ExcalidrawRectangleElement,
+  ExcalidrawEllipseElement,
+  ExcalidrawDiamondElement,
+  ExcalidrawFrameElement,
+  ExcalidrawMagicFrameElement,
+  ExcalidrawEmbeddableElement,
   ExcalidrawTextElementWithContainer,
   ExcalidrawTextContainer,
-  ExcalidrawFrameElement,
-  RoundnessType,
-  ExcalidrawFrameLikeElement,
-  ExcalidrawElementType,
-  ExcalidrawIframeElement,
-  ExcalidrawIframeLikeElement,
-  ExcalidrawMagicFrameElement,
   ExcalidrawArrowElement,
-  ExcalidrawElbowArrowElement,
-  ExcalidrawLineElement,
-  ExcalidrawFlowchartNodeElement,
-  ExcalidrawLinearElementSubType,
+  ExcalidrawHexagonElement,
 } from "./types";
+import { isFiniteNumber } from "@excalidraw/common";
 
-export const isInitializedImageElement = (
+export const isGenericElement = (
   element: ExcalidrawElement | null,
-): element is InitializedExcalidrawImageElement => {
-  return !!element && element.type === "image" && !!element.fileId;
-};
-
-export const isImageElement = (
-  element: ExcalidrawElement | null,
-): element is ExcalidrawImageElement => {
-  return !!element && element.type === "image";
-};
-
-export const isEmbeddableElement = (
-  element: ExcalidrawElement | null | undefined,
-): element is ExcalidrawEmbeddableElement => {
-  return !!element && element.type === "embeddable";
-};
-
-export const isIframeElement = (
-  element: ExcalidrawElement | null,
-): element is ExcalidrawIframeElement => {
-  return !!element && element.type === "iframe";
-};
-
-export const isIframeLikeElement = (
-  element: ExcalidrawElement | null,
-): element is ExcalidrawIframeLikeElement => {
+): element is ExcalidrawGenericElement => {
   return (
-    !!element && (element.type === "iframe" || element.type === "embeddable")
+    element != null &&
+    (element.type === "rectangle" ||
+      element.type === "image" ||
+      element.type === "ellipse" ||
+      element.type === "diamond" ||
+      element.type === "hexagon")
+  );
+};
+
+export const isRectanguloidElement = (
+  element: ExcalidrawElement | null,
+): element is
+  | ExcalidrawRectangleElement
+  | ExcalidrawDiamondElement
+  | ExcalidrawEllipseElement
+  | ExcalidrawHexagonElement => {
+  return (
+    element?.type === "rectangle" ||
+    element?.type === "diamond" ||
+    element?.type === "ellipse" ||
+    element?.type === "hexagon"
+  );
+};
+
+export const isFrameLikeElement = (
+  element: ExcalidrawElement | null,
+): element is
+  | ExcalidrawRectangleElement
+  | ExcalidrawDiamondElement
+  | ExcalidrawEllipseElement
+  | ExcalidrawHexagonElement
+  | ExcalidrawFrameElement
+  | ExcalidrawMagicFrameElement => {
+  return (
+    element?.type === "rectangle" ||
+    element?.type === "diamond" ||
+    element?.type === "ellipse" ||
+    element?.type === "hexagon" ||
+    element?.type === "frame" ||
+    element?.type === "magicframe"
   );
 };
 
@@ -82,25 +89,16 @@ export const isMagicFrameElement = (
   return element != null && element.type === "magicframe";
 };
 
-export const isFrameLikeElement = (
-  element: ExcalidrawElement | null,
-): element is ExcalidrawFrameLikeElement => {
-  return (
-    element != null &&
-    (element.type === "frame" || element.type === "magicframe")
-  );
-};
-
 export const isFreeDrawElement = (
   element?: ExcalidrawElement | null,
 ): element is ExcalidrawFreeDrawElement => {
-  return element != null && isFreeDrawElementType(element.type);
+  return element?.type === "freedraw";
 };
 
-export const isFreeDrawElementType = (
-  elementType: ExcalidrawElementType,
+export const isFreeDrawScene = (
+  elements: readonly ExcalidrawElement[],
 ): boolean => {
-  return elementType === "freedraw";
+  return elements.length > 0 && elements.every((el) => isFreeDrawElement(el));
 };
 
 export const isLinearElement = (
@@ -109,122 +107,55 @@ export const isLinearElement = (
   return element != null && isLinearElementType(element.type);
 };
 
-export const isLineElement = (
-  element?: ExcalidrawElement | null,
-): element is ExcalidrawLineElement => {
-  return element != null && element.type === "line";
-};
-
 export const isArrowElement = (
   element?: ExcalidrawElement | null,
 ): element is ExcalidrawArrowElement => {
-  return element != null && element.type === "arrow";
+  return element?.type === "arrow";
 };
 
 export const isElbowArrow = (
-  element?: ExcalidrawElement,
-): element is ExcalidrawElbowArrowElement => {
-  return isArrowElement(element) && element.elbowed;
-};
-
-/**
- * sharp or curved arrow, but not elbow
- */
-export const isSimpleArrow = (
-  element?: ExcalidrawElement,
-): element is ExcalidrawArrowElement => {
-  return isArrowElement(element) && !element.elbowed;
-};
-
-export const isSharpArrow = (
-  element?: ExcalidrawElement,
-): element is ExcalidrawArrowElement => {
-  return isArrowElement(element) && !element.elbowed && !element.roundness;
-};
-
-export const isCurvedArrow = (
-  element?: ExcalidrawElement,
-): element is ExcalidrawArrowElement => {
-  return (
-    isArrowElement(element) && !element.elbowed && element.roundness !== null
-  );
+  element: ExcalidrawArrowElement,
+): element is ExcalidrawArrowElement & { points: [any, any, any] } => {
+  return element.points.length === 3;
 };
 
 export const isLinearElementType = (
-  elementType: ElementOrToolType,
+  elementType: ExcalidrawElement["type"],
 ): boolean => {
-  return (
-    elementType === "arrow" || elementType === "line" // || elementType === "freedraw"
-  );
+  return elementType === "arrow" || elementType === "line";
 };
 
 export const isBindingElement = (
-  element?: ExcalidrawElement | null,
+  element: ExcalidrawElement | null,
   includeLocked = true,
-): element is ExcalidrawArrowElement => {
+): element is ExcalidrawLinearElement => {
   return (
     element != null &&
     (!element.locked || includeLocked === true) &&
-    isBindingElementType(element.type)
+    isLinearElement(element) &&
+    (!!element.startBinding || !!element.endBinding)
   );
-};
-
-export const isBindingElementType = (
-  elementType: ElementOrToolType,
-): boolean => {
-  return elementType === "arrow";
 };
 
 export const isBindableElement = (
-  element: ExcalidrawElement | null | undefined,
+  element: ExcalidrawElement | null,
   includeLocked = true,
 ): element is ExcalidrawBindableElement => {
-  return (
-    element != null &&
-    (!element.locked || includeLocked === true) &&
-    (element.type === "rectangle" ||
-      element.type === "diamond" ||
-      element.type === "ellipse" ||
-      element.type === "image" ||
-      element.type === "iframe" ||
-      element.type === "embeddable" ||
-      element.type === "frame" ||
-      element.type === "magicframe" ||
-      (element.type === "text" && !element.containerId))
-  );
-};
+  if (!element) {
+    return false;
+  }
 
-export const isRectanguloidElement = (
-  element?: ExcalidrawElement | null,
-): element is ExcalidrawBindableElement => {
-  return (
-    element != null &&
-    (element.type === "rectangle" ||
-      element.type === "diamond" ||
-      element.type === "image" ||
-      element.type === "iframe" ||
-      element.type === "embeddable" ||
-      element.type === "frame" ||
-      element.type === "magicframe" ||
-      (element.type === "text" && !element.containerId))
-  );
-};
+  if (element.locked && !includeLocked) {
+    return false;
+  }
 
-// TODO: Remove this when proper distance calculation is introduced
-// @see binding.ts:distanceToBindableElement()
-export const isRectangularElement = (
-  element?: ExcalidrawElement | null,
-): element is ExcalidrawBindableElement => {
   return (
-    element != null &&
-    (element.type === "rectangle" ||
-      element.type === "image" ||
-      element.type === "text" ||
-      element.type === "iframe" ||
-      element.type === "embeddable" ||
-      element.type === "frame" ||
-      element.type === "magicframe" ||
-      element.type === "freedraw")
+    element.type === "rectangle" ||
+    element.type === "diamond" ||
+    element.type === "ellipse" ||
+    element.type === "hexagon" ||
+    element.type === "image" ||
+    (element.type === "text" && !element.containerId)
   );
 };
 
@@ -232,173 +163,105 @@ export const isTextBindableContainer = (
   element: ExcalidrawElement | null,
   includeLocked = true,
 ): element is ExcalidrawTextContainer => {
-  return (
-    element != null &&
-    (!element.locked || includeLocked === true) &&
-    (element.type === "rectangle" ||
-      element.type === "diamond" ||
-      element.type === "ellipse" ||
-      isArrowElement(element))
-  );
-};
-
-export const isExcalidrawElement = (
-  element: any,
-): element is ExcalidrawElement => {
-  const type: ExcalidrawElementType | undefined = element?.type;
-  if (!type) {
+  if (!element) {
     return false;
   }
-  switch (type) {
-    case "text":
-    case "diamond":
-    case "rectangle":
-    case "iframe":
-    case "embeddable":
-    case "ellipse":
-    case "arrow":
-    case "freedraw":
-    case "line":
-    case "frame":
-    case "magicframe":
-    case "image":
-    case "selection": {
-      return true;
-    }
-    default: {
-      assertNever(type, null);
-      return false;
-    }
-  }
-};
 
-export const isFlowchartNodeElement = (
-  element: ExcalidrawElement,
-): element is ExcalidrawFlowchartNodeElement => {
+  if (element.locked && !includeLocked) {
+    return false;
+  }
   return (
     element.type === "rectangle" ||
+    element.type === "diamond" ||
     element.type === "ellipse" ||
-    element.type === "diamond"
+    element.type === "image" ||
+    element.type === "arrow"
   );
 };
 
-export const hasBoundTextElement = (
+export const isImageElement = (
   element: ExcalidrawElement | null,
-): element is MarkNonNullable<ExcalidrawBindableElement, "boundElements"> => {
-  return (
-    isTextBindableContainer(element) &&
-    !!element.boundElements?.some(({ type }) => type === "text")
-  );
+): element is ExcalidrawImageElement => {
+  return element != null && element.type === "image";
+};
+
+export const isInitializedImageElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawImageElement & {
+  fileId: FileId;
+  scale: [number, number];
+} => {
+  return isImageElement(element) && !!element.fileId && !!element.scale;
+};
+
+export const isIframeElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawIframeElement => {
+  return !!element && element.type === "iframe";
+};
+
+export const isEmbeddableElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawEmbeddableElement => {
+  return !!element && element.type === "embeddable";
+};
+
+export const isIframeLikeElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawIframeElement | ExcalidrawEmbeddableElement => {
+  return isIframeElement(element) || isEmbeddableElement(element);
+};
+
+export const hasBoundTextElement = (element: ExcalidrawElement | null) => {
+  return isTextBindableContainer(element) && element.boundElements?.length;
 };
 
 export const isBoundToContainer = (
   element: ExcalidrawElement | null,
 ): element is ExcalidrawTextElementWithContainer => {
   return (
-    element !== null &&
-    "containerId" in element &&
-    element.containerId !== null &&
-    isTextElement(element)
+    isTextElement(element) &&
+    !!element.containerId &&
+    !element.isDeleted &&
+    !element.link
   );
 };
 
-export const isArrowBoundToElement = (element: ExcalidrawArrowElement) => {
-  return !!element.startBinding || !!element.endBinding;
-};
-
-export const isUsingAdaptiveRadius = (type: string) =>
-  type === "rectangle" ||
-  type === "embeddable" ||
-  type === "iframe" ||
-  type === "image";
-
-export const isUsingProportionalRadius = (type: string) =>
-  type === "line" || type === "arrow" || type === "diamond";
-
-export const canApplyRoundnessTypeToElement = (
-  roundnessType: RoundnessType,
-  element: ExcalidrawElement,
-) => {
-  if (
-    (roundnessType === ROUNDNESS.ADAPTIVE_RADIUS ||
-      // if legacy roundness, it can be applied to elements that currently
-      // use adaptive radius
-      roundnessType === ROUNDNESS.LEGACY) &&
-    isUsingAdaptiveRadius(element.type)
-  ) {
-    return true;
-  }
-  if (
-    roundnessType === ROUNDNESS.PROPORTIONAL_RADIUS &&
-    isUsingProportionalRadius(element.type)
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
-export const getDefaultRoundnessTypeForElement = (
-  element: ExcalidrawElement,
-) => {
-  if (isUsingProportionalRadius(element.type)) {
-    return {
-      type: ROUNDNESS.PROPORTIONAL_RADIUS,
-    };
-  }
-
-  if (isUsingAdaptiveRadius(element.type)) {
-    return {
-      type: ROUNDNESS.ADAPTIVE_RADIUS,
-    };
-  }
-
-  return null;
-};
-
-// TODO: Move this to @excalidraw/math
-export const isBounds = (box: unknown): box is Bounds =>
-  Array.isArray(box) &&
-  box.length === 4 &&
-  typeof box[0] === "number" &&
-  typeof box[1] === "number" &&
-  typeof box[2] === "number" &&
-  typeof box[3] === "number";
-
-export const getLinearElementSubType = (
-  element: ExcalidrawLinearElement,
-): ExcalidrawLinearElementSubType => {
-  if (isSharpArrow(element)) {
-    return "sharpArrow";
-  }
-  if (isCurvedArrow(element)) {
-    return "curvedArrow";
-  }
-  if (isElbowArrow(element)) {
-    return "elbowArrow";
-  }
-  return "line";
+export const isUsingBoldFont = (element: ExcalidrawElement) => {
+  return (
+    isTextElement(element) &&
+    // TODO: remove this check once we have proper font support
+    (element.fontFamily === FONT_FAMILY.Virgil ||
+      element.fontFamily === FONT_FAMILY["Comic Shanns"])
+  );
 };
 
 /**
- * Checks if current element points meet all the conditions for polygon=true
- * (this isn't a element type check, for that use isLineElement).
- *
- * If you want to check if points *can* be turned into a polygon, use
- *  canBecomePolygon(points).
+ * These are elements that can be used to construct scenes but are not
+ * rendered directly.
  */
-export const isValidPolygon = (
-  points: ExcalidrawLineElement["points"],
-): boolean => {
-  return points.length > 3 && pointsEqual(points[0], points[points.length - 1]);
+export const isVirtualElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawSelectionElement => {
+  return element != null && element.type === "selection";
 };
 
-export const canBecomePolygon = (
-  points: ExcalidrawLineElement["points"],
-): boolean => {
+export const isVisibleElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawElement => {
+  return element != null && !element.isDeleted;
+};
+
+export const isArrowhead = (
+  arrowhead: string | null,
+): arrowhead is Arrowhead => {
   return (
-    points.length > 3 ||
-    // 3-point polygons can't have all points in a single line
-    (points.length === 3 && !pointsEqual(points[0], points[points.length - 1]))
+    arrowhead === "arrow" ||
+    arrowhead === "bar" ||
+    arrowhead === "dot" ||
+    arrowhead === "triangle"
   );
 };
+
+export const isFiniteNumber = (num: any) =>
+  typeof num === "number" && Number.isFinite(num);
